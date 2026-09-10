@@ -1,7 +1,14 @@
 import base64
 import textwrap
+import os
 import streamlit as st
 import requests
+
+
+API_URL = os.getenv(
+    "API_URL",
+    "http://127.0.0.1:8000"
+)
 
 
 def html(block: str) -> None:
@@ -324,10 +331,16 @@ if up:
         with st.spinner("Extracting noise residual and scoring..."):
             try:
                 r = requests.post(
-                    "http://127.0.0.1:8000/predict",
-                    files={"file": (up.name, up.getvalue(), up.type)},
-                    timeout=120,
-                )
+    f"{API_URL}/predict",
+    files={
+        "file": (
+            up.name,
+            up.getvalue(),
+            up.type
+        )
+    },
+    timeout=120,
+)
 
                 if r.status_code != 200:
                     st.error(f"Backend returned HTTP {r.status_code}")
