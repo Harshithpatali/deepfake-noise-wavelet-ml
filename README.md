@@ -29,16 +29,17 @@
 7. [Feature-Set Comparison](#7-feature-set-comparison)
 8. [Model — Regularized Logistic Regression](#8-model--regularized-logistic-regression)
 9. [Threshold Selection](#9-threshold-selection)
-10. [Validation / Test / Holdout Protocol](#10-validation--test--holdout-protocol)
-11. [Production Architecture](#11-production-architecture)
-12. [API Reference](#12-api-reference)
-13. [Repository Structure](#13-repository-structure)
-14. [Local Development](#14-local-development)
-15. [Deployment](#15-deployment)
-16. [Scientific Design Principles](#16-scientific-design-principles)
-17. [Limitations](#17-limitations)
-18. [Future Research](#18-future-research)
-19. [Disclaimer](#19-disclaimer)
+10. [Validation Set Performance](#10-validation-set-performance)
+11. [Validation / Test / Holdout Protocol](#11-validation--test--holdout-protocol)
+12. [Production Architecture](#12-production-architecture)
+13. [API Reference](#13-api-reference)
+14. [Repository Structure](#14-repository-structure)
+15. [Local Development](#15-local-development)
+16. [Deployment](#16-deployment)
+17. [Scientific Design Principles](#17-scientific-design-principles)
+18. [Limitations](#18-limitations)
+19. [Future Research](#19-future-research)
+20. [Disclaimer](#20-disclaimer)
 
 ---
 
@@ -309,7 +310,40 @@ The frozen `τ` is stored alongside the model schema so production inference nev
 
 ---
 
-## 10. Validation / Test / Holdout Protocol
+## 10. Validation Set Performance
+
+Metrics below are computed on the **validation split** (48,289 images) at the frozen operating threshold `τ = 0.32`, selected as described in §9.
+
+| Metric | Value |
+|---|---:|
+| Threshold (τ) | 0.320 |
+| ROC-AUC | 0.9249 |
+| PR-AUC | 0.9124 |
+| Accuracy | 0.9086 |
+| Precision | 0.9062 |
+| Recall (Sensitivity) | 0.9163 |
+| F1-score | 0.9140 |
+| Balanced Accuracy | 0.8964 |
+
+**Confusion matrix**
+
+| | Predicted REAL | Predicted FAKE |
+|---|---:|---:|
+| **Actual REAL** | TN = 6,299 | FP = 1,554 |
+| **Actual FAKE** | FN = 381 | TP = 40,055 |
+
+```text
+Specificity (TNR) = TN / (TN + FP) = 6,299 / 7,853  ≈ 0.802
+NPV               = TN / (TN + FN) = 6,299 / 6,680  ≈ 0.943
+```
+
+At `τ = 0.32`, the model favors **recall over precision on the FAKE class** — it is tuned to minimize missed synthetic images (FN = 381) at the cost of a higher false-positive rate on real images (FP = 1,554). This is a deliberate trade-off for a screening tool, where a missed deepfake is typically more costly than a false alarm on a genuine image.
+
+These are validation-set numbers used to select and freeze `τ`; the locked test set and blind holdout (§11) provide the unbiased generalization check.
+
+---
+
+## 11. Validation / Test / Holdout Protocol
 
 | Split | Role |
 |---|---|
@@ -322,7 +356,7 @@ Repeated test-set use during development is avoided deliberately — it produces
 
 ---
 
-## 11. Production Architecture
+## 12. Production Architecture
 
 ```text
                          USER
@@ -356,7 +390,7 @@ The deployed system performs **inference only** — no retraining, no re-selecti
 
 ---
 
-## 12. API Reference
+## 13. API Reference
 
 **Base URL:** `https://deepfake-noise-wavelet-ml.onrender.com`
 
@@ -384,7 +418,7 @@ Multipart image upload → forensic prediction.
 
 ---
 
-## 13. Repository Structure
+## 14. Repository Structure
 
 ```text
 deepfake-noise-wavelet-ml/
@@ -426,7 +460,7 @@ deepfake-noise-wavelet-ml/
 
 ---
 
-## 14. Local Development
+## 15. Local Development
 
 ```bash
 git clone https://github.com/Harshithpatali/deepfake-noise-wavelet-ml.git
@@ -457,7 +491,7 @@ The frontend targets `http://127.0.0.1:8000` locally, or `API_URL` in production
 
 ---
 
-## 15. Deployment
+## 16. Deployment
 
 | Service | Platform | Entry point |
 |---|---|---|
@@ -468,7 +502,7 @@ The frontend communicates with the backend via the `API_URL` environment variabl
 
 ---
 
-## 16. Scientific Design Principles
+## 17. Scientific Design Principles
 
 | # | Principle |
 |---|---|
@@ -483,7 +517,7 @@ The frontend communicates with the backend via the `API_URL` environment variabl
 
 ---
 
-## 17. Limitations
+## 18. Limitations
 
 - **Dataset dependence** — performance reflects the training distribution; unseen generators may behave differently.
 - **Compression sensitivity** — recompression, screenshots, and resizing can alter high-frequency statistics the model relies on.
@@ -495,7 +529,7 @@ The frontend communicates with the backend via the `API_URL` environment variabl
 
 ---
 
-## 18. Future Research
+## 19. Future Research
 
 - **Cross-generator evaluation** — train on one manipulation family, evaluate on unseen ones.
 - **Cross-dataset evaluation** — evaluate on an independent dataset beyond DeepFakeFusion-304K.
@@ -508,7 +542,7 @@ The frontend communicates with the backend via the `API_URL` environment variabl
 
 ---
 
-## 19. Disclaimer
+## 20. Disclaimer
 
 This project is intended for **research, experimentation, education, and image-forensics screening**.
 
