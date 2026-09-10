@@ -83,11 +83,11 @@ The hypothesis: synthetic image pipelines perturb high-frequency structure and m
 
 > **Can measurable differences in image noise and multi-scale wavelet statistics provide useful forensic evidence for detecting synthetic face images?**
 
-A secondary objective compares the discriminative value of:
+A secondary objective compares the discriminative value of three feature sets:
 
-$$
-\mathcal{F}_{\text{spatial}} \quad\text{vs.}\quad \mathcal{F}_{\text{wavelet}} \quad\text{vs.}\quad \mathcal{F}_{\text{combined}} = \mathcal{F}_{\text{spatial}} \cup \mathcal{F}_{\text{wavelet}}
-$$
+```text
+F_spatial      vs.      F_wavelet      vs.      F_combined = F_spatial ∪ F_wavelet
+```
 
 The design is deliberately **interpretable** — every dimension of the feature vector has a closed-form statistical definition, so the classifier's decision boundary is traceable back to measurable image properties rather than opaque learned filters.
 
@@ -104,7 +104,7 @@ The design is deliberately **interpretable** — every dimension of the feature 
 | Test | 11,199 | 14,305 | 25,504 | 56.1% |
 | **Total** | **143,410** | **170,744** | **304,154** | **56.1%** |
 
-Label convention: $y \in \{0, 1\}$, where $\text{REAL} = 0$, $\text{FAKE} = 1$.
+Label convention: `y ∈ {0, 1}`, where `REAL = 0` and `FAKE = 1`.
 
 ---
 
@@ -150,70 +150,64 @@ Grayscale conversion is intentional: the analysis targets spatial intensity stru
 
 ## 6. Feature Engineering — Mathematical Formulation
 
-$$
-\underbrace{16}_{\text{spatial}} \;+\; \underbrace{71}_{\text{wavelet}} \;+\; \underbrace{18}_{\text{forensic descriptors}} \;=\; \underbrace{105}_{\text{total features}}
-$$
+```text
+16 (spatial)  +  71 (wavelet)  +  18 (forensic descriptors)  =  105 total features
+```
 
-Let $I \in \mathbb{R}^{256 \times 256}$ be the preprocessed grayscale image, flattened to pixel intensities $\{x_i\}_{i=1}^{N}$, $N = 65{,}536$.
+Let `I` be the preprocessed 256×256 grayscale image, flattened to pixel intensities `{x_1, ..., x_N}`, where `N = 65,536`.
 
 ### 6.1 Spatial / Intensity Statistics (7)
 
-$$
-\mu = \frac{1}{N}\sum_i x_i \qquad
-\sigma = \sqrt{\frac{1}{N}\sum_i (x_i-\mu)^2} \qquad
-\sigma^2 \qquad
-E = \sum_i x_i^2
-$$
+```text
+mean            μ  = (1/N) Σ xᵢ
+std. dev.       σ  = √[ (1/N) Σ (xᵢ − μ)² ]
+variance        σ²
+energy          E  = Σ xᵢ²
+MAD             (1/N) Σ |xᵢ − μ|
 
-$$
-\text{MAD} = \frac{1}{N}\sum_i |x_i - \mu| \qquad
-\gamma_1 = \frac{\frac{1}{N}\sum_i (x_i-\mu)^3}{\sigma^3} \qquad
-\gamma_2 = \frac{\frac{1}{N}\sum_i (x_i-\mu)^4}{\sigma^4} - 3
-$$
+skewness        γ₁ = [ (1/N) Σ (xᵢ − μ)³ ] / σ³
+kurtosis        γ₂ = [ (1/N) Σ (xᵢ − μ)⁴ ] / σ⁴  − 3
+```
 
 → `pixel_mean · pixel_std · pixel_variance · pixel_energy · pixel_mad · pixel_skewness · pixel_kurtosis`
 
 ### 6.2 Gradient Statistics (3)
 
-Using Sobel operators $G_x, G_y$, gradient magnitude:
+Using Sobel operators `Gx`, `Gy`, gradient magnitude:
 
-$$
-|\nabla I| = \sqrt{G_x^2 + G_y^2}
-$$
+```text
+|∇I| = √(Gx² + Gy²)
+```
 
-Mean, standard deviation, and energy of $|\nabla I|$ →  `gradient_mean · gradient_std · gradient_energy`
+Mean, standard deviation, and energy of `|∇I|` → `gradient_mean · gradient_std · gradient_energy`
 
 ### 6.3 Laplacian Statistics (3)
 
-$$
-\nabla^2 I = \frac{\partial^2 I}{\partial x^2} + \frac{\partial^2 I}{\partial y^2}
-$$
+```text
+∇²I = ∂²I/∂x² + ∂²I/∂y²
+```
 
-Mean, standard deviation, and energy of $\nabla^2 I$ → `laplacian_mean · laplacian_std · laplacian_energy`
+Mean, standard deviation, and energy of `∇²I` → `laplacian_mean · laplacian_std · laplacian_energy`
 
 ### 6.4 High-Frequency Noise Residual (6)
 
-Residual after Gaussian smoothing $I_\sigma = I * G_\sigma$:
+Residual after Gaussian smoothing `I_σ = I * Gaussian(σ)`:
 
-$$
-R = I - I_\sigma
-$$
+```text
+R = I − I_σ
 
-$$
-\text{noise\_hf\_mean} = \bar R \qquad
-\text{noise\_hf\_std} = \sigma_R \qquad
-\text{noise\_hf\_energy} = \sum R^2
-$$
+noise_hf_mean         = mean(R)
+noise_hf_std          = std(R)
+noise_hf_energy       = Σ R²
 
-$$
-\text{noise\_hf\_median\_abs} = \operatorname{median}(|R|) \qquad
-\text{noise\_hf\_p95\_abs} = Q_{0.95}(|R|) \qquad
-\text{noise\_hf\_p99\_abs} = Q_{0.99}(|R|)
-$$
+noise_hf_median_abs   = median(|R|)
+noise_hf_p95_abs      = 95th percentile(|R|)
+noise_hf_p99_abs      = 99th percentile(|R|)
+```
 
 ### 6.5 Distributional Descriptors — Gradient & Laplacian (8)
 
-Percentiles $Q_{0.50}, Q_{0.90}, Q_{0.95}, Q_{0.99}$ of $|\nabla I|$ and $|\nabla^2 I|$:
+50th / 90th / 95th / 99th percentiles of `|∇I|` and `|∇²I|`:
 
 `gradient_p50/90/95/99_abs` · `laplacian_p50/90/95/99_abs`
 
@@ -221,56 +215,51 @@ Percentiles $Q_{0.50}, Q_{0.90}, Q_{0.95}, Q_{0.99}$ of $|\nabla I|$ and $|\nabl
 
 A 2-D discrete wavelet transform (`pywt.wavedec2`) with wavelet **db2** at **level 3**:
 
-$$
-I \;\xrightarrow{\;\text{wavedec2}\;}\; \{ LL_3,\; LH_3, HL_3, HH_3,\; LH_2, HL_2, HH_2,\; LH_1, HL_1, HH_1 \}
-$$
+```text
+I  →  wavedec2  →  { LL3, LH3, HL3, HH3, LH2, HL2, HH2, LH1, HL1, HH1 }
+```
 
-10 sub-bands, each yielding the same 7 statistics as §6.1 ($\mu, \sigma, \sigma^2, E, \text{MAD}, \gamma_1, \gamma_2$):
+10 sub-bands, each yielding the same 7 statistics as §6.1 (mean, std, variance, energy, MAD, skewness, kurtosis):
 
-$$
-10 \text{ bands} \times 7 \text{ statistics} = 70 \text{ features}
-$$
+```text
+10 bands × 7 statistics = 70 features
+```
 
-Plus a robust noise-scale estimator (Donoho's MAD estimator) over the finest detail coefficients $d$:
+Plus a robust noise-scale estimator (Donoho's MAD estimator) over the finest detail coefficients `d`:
 
-$$
-\hat\sigma = \frac{\operatorname{median}(|d|)}{0.6745}
-$$
+```text
+σ̂ = median(|d|) / 0.6745
 
-$$
-70 + 1\;(\hat\sigma) = 71 \text{ wavelet features}
-$$
+70 + 1 (σ̂) = 71 wavelet features
+```
 
 ### 6.7 Wavelet Relationship Descriptors (3)
 
-Let $E_k$ be the energy of sub-band $k$, and $p_k = E_k / \sum_j E_j$ its normalized share:
+Let `E_k` be the energy of sub-band `k`, and `p_k = E_k / Σ E_j` its normalized share:
 
-$$
-\text{wavelet\_detail\_energy\_ratio} = \frac{\sum_{k \ne LL_3} E_k}{\sum_k E_k}
-\qquad
-\text{wavelet\_high\_low\_energy\_ratio} = \frac{\sum_{k \in \{LH,HL,HH\}} E_k}{E_{LL_3}}
-$$
+```text
+wavelet_detail_energy_ratio    = ( Σ E_k for k ≠ LL3 ) / ( Σ E_k for all k )
+wavelet_high_low_energy_ratio  = ( Σ E_k for k ∈ {LH, HL, HH} ) / E_LL3
 
-$$
-\text{wavelet\_entropy} = -\sum_k p_k \log_2 p_k
-$$
+wavelet_entropy                = − Σ p_k · log₂(p_k)
+```
 
 ### 6.8 Local Texture Statistics (4)
 
-For a sliding window of local standard deviations $S = \{\sigma_w\}$ computed over local patches $w$:
+For a sliding window of local standard deviations `S = {σ_w}` computed over local patches `w`:
 
-$$
-\text{local\_std\_mean} = \bar S \qquad
-\text{local\_std\_std} = \sigma_S \qquad
-\text{local\_std\_p90} = Q_{0.90}(S) \qquad
-\text{local\_std\_p95} = Q_{0.95}(S)
-$$
+```text
+local_std_mean = mean(S)
+local_std_std  = std(S)
+local_std_p90  = 90th percentile(S)
+local_std_p95  = 95th percentile(S)
+```
 
 ---
 
 ## 7. Feature-Set Comparison
 
-Experiments compared classifiers trained on $\mathcal{F}_{\text{spatial}}$, $\mathcal{F}_{\text{wavelet}}$, and $\mathcal{F}_{\text{combined}}$.
+Experiments compared classifiers trained on `F_spatial`, `F_wavelet`, and `F_combined`.
 
 > **Finding:** the wavelet/noise representation performed **slightly** better than the spatial/noise representation alone — not a dramatic margin, but a consistent one.
 
@@ -288,37 +277,35 @@ The production classifier is chosen deliberately for interpretability, small foo
 
 ### 8.1 L1 Feature Selection
 
-Feature selection is fit **on training data only**, using an $\ell_1$-penalized logistic regression to induce sparsity:
+Feature selection is fit **on training data only**, using an L1-penalized logistic regression to induce sparsity:
 
-$$
-\hat w = \arg\min_w \; \underbrace{-\frac{1}{N}\sum_{i=1}^N \Big[ y_i \log p_i + (1-y_i)\log(1-p_i) \Big]}_{\text{cross-entropy loss}} \;+\; \lambda \lVert w \rVert_1
-$$
+```text
+ŵ = argmin_w  [  −(1/N) Σᵢ ( yᵢ·log(pᵢ) + (1−yᵢ)·log(1−pᵢ) )   +   λ·‖w‖₁  ]
+                └──────────────── cross-entropy loss ────────────────┘
+```
 
-Features with $\hat w_j = 0$ are dropped; the surviving indices are frozen into `feature_schema_l1.json`.
+Features with `ŵ_j = 0` are dropped; the surviving indices are frozen into `feature_schema_l1.json`.
 
 ### 8.2 Final Classifier
 
-$$
-p_i = P(\text{FAKE}\mid x_i) = \sigma(w^\top x_i + b) = \frac{1}{1 + e^{-(w^\top x_i + b)}}
-$$
+```text
+pᵢ = P(FAKE | xᵢ) = sigmoid(wᵀxᵢ + b) = 1 / (1 + e^−(wᵀxᵢ + b))
+```
 
-fit on the L1-selected feature subset via training-only cross-validation over the regularization strength $\lambda$ (equivalently $C = 1/\lambda$ in scikit-learn's parameterization).
+fit on the L1-selected feature subset via training-only cross-validation over the regularization strength λ (equivalently `C = 1/λ` in scikit-learn's parameterization).
 
 ---
 
 ## 9. Threshold Selection
 
-Rather than assuming $\tau = 0.5$, the classification threshold is tuned on the **validation** set and then **frozen**:
+Rather than assuming a threshold of 0.5, the classification threshold `τ` is tuned on the **validation** set and then **frozen**:
 
-$$
-\hat y_i =
-\begin{cases}
-\text{FAKE}, & p_i \ge \tau \\
-\text{REAL}, & p_i < \tau
-\end{cases}
-$$
+```text
+ŷᵢ = FAKE   if  pᵢ ≥ τ
+     REAL   if  pᵢ < τ
+```
 
-The frozen $\tau$ is stored alongside the model schema so production inference never re-derives it.
+The frozen `τ` is stored alongside the model schema so production inference never re-derives it.
 
 ---
 
@@ -326,8 +313,8 @@ The frozen $\tau$ is stored alongside the model schema so production inference n
 
 | Split | Role |
 |---|---|
-| **Train** | feature selection ($\ell_1$), model fitting, CV hyperparameter search |
-| **Validation** | model comparison, threshold $\tau$ selection |
+| **Train** | feature selection (L1), model fitting, CV hyperparameter search |
+| **Validation** | model comparison, threshold τ selection |
 | **Official test** | single locked evaluation, touched once |
 | **Blind holdout** | independent sanity check after the model is frozen |
 
@@ -486,9 +473,9 @@ The frontend communicates with the backend via the `API_URL` environment variabl
 | # | Principle |
 |---|---|
 | 1 | **Fixed preprocessing** — identical pipeline for every image |
-| 2 | **Training-only feature selection** — test set never touched during $\ell_1$ selection |
+| 2 | **Training-only feature selection** — test set never touched during L1 selection |
 | 3 | **Training-only model fitting** — no validation/test leakage into weights |
-| 4 | **Validation-based threshold** — $\tau$ tuned on validation, then frozen |
+| 4 | **Validation-based threshold** — τ tuned on validation, then frozen |
 | 5 | **Locked test evaluation** — official test set used exactly once |
 | 6 | **Blind holdout** — independent post-freeze sanity check |
 | 7 | **Reproducible feature schema** — explicit, versioned, stored schema |
@@ -500,7 +487,7 @@ The frontend communicates with the backend via the `API_URL` environment variabl
 
 - **Dataset dependence** — performance reflects the training distribution; unseen generators may behave differently.
 - **Compression sensitivity** — recompression, screenshots, and resizing can alter high-frequency statistics the model relies on.
-- **Information loss** — grayscale conversion and $256\times256$ resizing discard information that cannot be recovered.
+- **Information loss** — grayscale conversion and 256×256 resizing discard information that cannot be recovered.
 - **Generalization** — strong test-set performance does not guarantee performance on future, unseen generation methods.
 - **Errors are possible** — both false positives and false negatives occur; no binary classifier is perfect.
 - **Probabilistic, not certain** — the output is a calibrated *score*, not a statement of certainty about provenance.
@@ -516,7 +503,7 @@ The frontend communicates with the backend via the `API_URL` environment variabl
 - **Frequency-domain comparison** — Fourier features, DCT features, high-pass residuals, multi-scale Laplacian pyramids.
 - **Robustness testing** — JPEG recompression, cropping, blur, screenshot capture, brightness/contrast shifts.
 - **Explainability** — attribution of classifier decisions back to individual forensic features.
-- **Calibration analysis** — verifying that $p_i$ behaves as a well-calibrated probability, not just a ranking score.
+- **Calibration analysis** — verifying that pᵢ behaves as a well-calibrated probability, not just a ranking score.
 - **Model ablation** — Random Forest, Gradient Boosting, XGBoost, LightGBM, shallow MLPs, under the same strict train/val/test protocol.
 
 ---
