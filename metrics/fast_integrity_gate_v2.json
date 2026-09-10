@@ -1,0 +1,11 @@
+{
+  "dataset_total": 304154,
+  "expected_total": 304154,
+  "counts_match": true,
+  "invalid_provenance_rows": 0,
+  "sample_per_class_per_split": 100,
+  "sample_total": 600,
+  "sample_failures": 0,
+  "random_seed": 42,
+  "status": "PASSED"
+}

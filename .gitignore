@@ -1,0 +1,227 @@
+# ============================================================
+# DeepFake Noise + Wavelet + ML
+# Git ignore configuration
+# ============================================================
+
+
+# ============================================================
+# PYTHON
+# ============================================================
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+*.pyo
+*.pyd
+
+*.egg
+*.egg-info/
+.eggs/
+
+build/
+dist/
+
+pip-wheel-metadata/
+
+
+# ============================================================
+# VIRTUAL ENVIRONMENTS
+# ============================================================
+
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+
+# ============================================================
+# JUPYTER NOTEBOOK
+# ============================================================
+
+.ipynb_checkpoints/
+
+
+# ============================================================
+# PYTHON DEVELOPMENT / TESTING
+# ============================================================
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.coverage
+.coverage.*
+htmlcov/
+
+.tox/
+.nox/
+
+
+# ============================================================
+# IDE
+# ============================================================
+
+.vscode/
+.idea/
+
+*.swp
+*.swo
+*.swn
+
+
+# ============================================================
+# OPERATING SYSTEM
+# ============================================================
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+
+# ============================================================
+# ENVIRONMENT / SECRETS
+# ============================================================
+
+.env
+.env.*
+!.env.example
+
+*.pem
+*.key
+
+
+# ============================================================
+# LOGS
+# ============================================================
+
+*.log
+
+
+# ============================================================
+# TEMPORARY FILES
+# ============================================================
+
+*.tmp
+*.temp
+*.bak
+*.old
+
+
+# ============================================================
+# DATASET
+# ============================================================
+
+# Raw DeepFakeFusion dataset
+data/raw/
+
+# Processed datasets
+data/processed/
+
+# 50-image blind holdout
+data/holdout_50/
+
+
+# ============================================================
+# GENERATED FEATURE DATA
+# ============================================================
+
+data/features/
+
+
+# ============================================================
+# LARGE / GENERATED DATA FILES
+# ============================================================
+
+*.parquet
+*.feather
+*.h5
+*.hdf5
+
+
+# ============================================================
+# GENERATED MODEL ARTIFACTS
+# ============================================================
+
+# Ignore all Joblib models by default
+models/*.joblib
+
+# KEEP ONLY THE PRODUCTION MODEL
+!models/model_frozen.joblib
+
+# Production inference schema
+!models/feature_schema_l1.json
+
+# L1 selector is NOT required by production inference
+models/l1_selector_frozen.joblib
+
+
+# ============================================================
+# MODEL / ML CACHE
+# ============================================================
+
+*.pkl
+*.pickle
+
+# If any large model accidentally gets generated elsewhere
+*.onnx
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+
+
+# ============================================================
+# GENERATED CACHE / OUTPUT DIRECTORIES
+# ============================================================
+
+.cache/
+.cache/
+
+outputs/
+artifacts/
+tmp/
+temp/
+
+
+# ============================================================
+# LOCAL STREAMLIT FILES
+# ============================================================
+
+.streamlit/secrets.toml
+
+
+# ============================================================
+# LOCAL RENDER / DEPLOYMENT TEMP FILES
+# ============================================================
+
+render.yaml.local
+
+
+# ============================================================
+# OPTIONAL: LOCAL TEST IMAGES
+# ============================================================
+
+# Uncomment if you create a local test-image directory
+# test_images/
+
+
+# ============================================================
+# KEEP THESE IMPORTANT PROJECT FILES IN GIT
+# ============================================================
+
+# The following are intentionally NOT ignored:
+#
+# backend/
+# frontend/
+# src/
+# models/model_frozen.joblib
+# models/feature_schema_l1.json
+# production_inference.py
+# requirements.txt
+# Procfile
+# README.md
+# notebooks/
+# metrics/
