@@ -22,5 +22,7 @@ async def predict(file:UploadFile=File(...)):
         Path(path).write_bytes(data)
         return predict_image(path)
     except Exception as e:
-        raise HTTPException(400,f"Invalid image: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(500, f"Inference failed: {type(e).__name__}: {e}")
     finally: Path(path).unlink(missing_ok=True)
